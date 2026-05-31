@@ -150,6 +150,8 @@ describe('ZoomableImage wheel behavior', () => {
     mockSetTransform.mockClear();
     mockZoomIn.mockClear();
     mockZoomOut.mockClear();
+    // Keep the internal wrapper unavailable by default so tests cover the
+    // production fallback path where the wheel area owns scroll handling.
     mockWrapperComponent = null;
     mockTransformState.scale = 1;
     mockTransformState.positionX = 0;
@@ -270,6 +272,25 @@ describe('ZoomableImage wheel behavior', () => {
     });
 
     expectLatestTransform(200, 150, 1);
+  });
+
+  test('uses a fit-to-view minimum scale when the image is larger than the measured viewer', () => {
+    mockTransformState.scale = 0.55;
+    mockTransformState.positionX = -80;
+    mockTransformState.positionY = -60;
+
+    const { wheelArea } = setupWheelScene({
+      wrapperSize: { width: 500, height: 400 },
+      imageSize: { width: 1000, height: 800 },
+    });
+
+    fireEvent.wheel(wheelArea, {
+      deltaY: 100,
+      clientX: 450,
+      clientY: 350,
+    });
+
+    expectLatestTransform(0, 0, 0.5);
   });
 
   test('clamps wheel zoom targets so the image cannot be pulled offscreen', () => {
